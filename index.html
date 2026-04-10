@@ -1,52 +1,557 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HTML Viewer</title>
+  <title>HTML Online Viewer Clone</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css"
+    id="hljs-theme"
+  />
+
   <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-2: #eef2f7;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #dbe3ee;
+      --primary: #0d6efd;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    body.dark {
+      --bg: #0f172a;
+      --surface: #111827;
+      --surface-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #334155;
+      --primary: #60a5fa;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
     body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .app-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .toolbar {
+      gap: 0.5rem;
+    }
+
+    .toolbar .btn {
+      white-space: nowrap;
+    }
+
+    .main-wrap {
+      padding: 1rem;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-weight: 600;
       margin: 0;
-      font-family: Arial, sans-serif;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      height: 100vh;
+      font-size: 1rem;
     }
 
-    textarea {
-      width: 100%;
-      height: 100%;
-      border: none;
-      outline: none;
-      resize: none;
-      padding: 16px;
-      font-family: monospace;
-      font-size: 14px;
-      box-sizing: border-box;
+    .panel-subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
     }
 
-    iframe {
+    #editor {
       width: 100%;
-      height: 100%;
-      border: none;
+      height: 72vh;
+    }
+
+    #previewFrame {
+      width: 100%;
+      height: 72vh;
+      border: 0;
       background: white;
+    }
+
+    .status-bar {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 1rem 0 0;
+      text-align: center;
+    }
+
+    .btn-soft {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-soft:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .about-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1rem;
+      margin-top: 1rem;
+      color: var(--muted);
+    }
+
+    .ace_gutter {
+      background: transparent !important;
+    }
+
+    @media (max-width: 991px) {
+      #editor,
+      #previewFrame {
+        height: 48vh;
+      }
     }
   </style>
 </head>
 <body>
-  <textarea id="editor"><h1>Hola mundo</h1><p>Esto es una prueba</p></textarea>
-  <iframe id="preview"></iframe>
+  <header class="app-header">
+    <div class="container-fluid py-3">
+      <div class="d-flex flex-column gap-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <a href="#" class="brand">
+            <i class="fa-brands fa-html5 me-2"></i>HTML Online Viewer Clone
+          </a>
+          <div class="status-bar" id="statusText">Ready</div>
+        </div>
+
+        <div class="toolbar d-flex flex-wrap">
+          <button class="btn btn-primary" id="btnPreview">
+            <i class="fa-regular fa-window-restore me-1"></i> Preview
+          </button>
+          <button class="btn btn-soft" id="btnHighlight">
+            <i class="fa-solid fa-code me-1"></i> Highlight
+          </button>
+          <button class="btn btn-soft" id="btnFormat">
+            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Format
+          </button>
+          <button class="btn btn-soft" id="btnExpand">
+            <i class="fa-solid fa-up-right-and-down-left-from-center me-1"></i> Expand all
+          </button>
+          <button class="btn btn-soft" id="btnCollapse">
+            <i class="fa-solid fa-down-left-and-up-right-to-center me-1"></i> Collapse all
+          </button>
+          <button class="btn btn-soft" id="btnSample">
+            <i class="fa-regular fa-file-lines me-1"></i> Sample
+          </button>
+          <button class="btn btn-soft" id="btnClear">
+            <i class="fa-regular fa-trash-can me-1"></i> Clear
+          </button>
+          <button class="btn btn-soft" id="btnImport">
+            <i class="fa-solid fa-file-import me-1"></i> Import from file
+          </button>
+          <button class="btn btn-soft" id="btnExport">
+            <i class="fa-solid fa-file-export me-1"></i> Export to file
+          </button>
+          <button class="btn btn-soft" id="btnDark">
+            <i class="fa-regular fa-moon me-1"></i> Dark mode
+          </button>
+          <button class="btn btn-soft" id="btnLight">
+            <i class="fa-regular fa-sun me-1"></i> Light mode
+          </button>
+          <input type="file" id="fileInput" accept=".html,.htm,.txt" hidden />
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-wrap container-fluid">
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Editor</h2>
+              <div class="panel-subtitle">Put your HTML text here</div>
+            </div>
+          </div>
+          <div id="editor"></div>
+        </section>
+      </div>
+
+      <div class="col-lg-6">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Live Preview</h2>
+              <div class="panel-subtitle">Rendered safely inside a sandboxed iframe</div>
+            </div>
+          </div>
+          <iframe
+            id="previewFrame"
+            sandbox="allow-scripts allow-forms allow-modals"
+            referrerpolicy="no-referrer"
+          ></iframe>
+        </section>
+      </div>
+    </div>
+
+    <div class="about-box">
+      This clone runs entirely in the browser. Your HTML is processed locally in the editor and rendered in the preview frame.
+    </div>
+
+    <div class="footer-note">
+      Built for GitHub Pages deployment.
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ext-language_tools.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
 
   <script>
-    const editor = document.getElementById("editor");
-    const preview = document.getElementById("preview");
+    const SAMPLE_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f8fafc;
+      color: #1f2937;
+    }
+    .card {
+      max-width: 560px;
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 12px 30px rgba(0,0,0,.08);
+    }
+    button {
+      padding: .75rem 1rem;
+      border: 0;
+      border-radius: 10px;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Hello, world</h1>
+    <p>This is a sample HTML snippet rendered in real time.</p>
+    <button onclick="alert('Preview is working')">Test button</button>
+  </div>
+</body>
+</html>`;
 
-    function renderHTML() {
-      preview.srcdoc = editor.value;
+    const editor = ace.edit("editor");
+    const previewFrame = document.getElementById("previewFrame");
+    const statusText = document.getElementById("statusText");
+    const fileInput = document.getElementById("fileInput");
+    const hljsTheme = document.getElementById("hljs-theme");
+
+    editor.setTheme("ace/theme/chrome");
+    editor.session.setMode("ace/mode/html");
+    editor.setOptions({
+      fontSize: "14px",
+      wrap: true,
+      useSoftTabs: true,
+      tabSize: 2,
+      showPrintMargin: false,
+      enableBasicAutocompletion: true,
+      enableLiveAutocompletion: true
+    });
+
+    const LOCAL_STORAGE_KEY = "html-playground-live-content";
+    const THEME_STORAGE_KEY = "html-playground-live-theme";
+
+    function setStatus(text) {
+      statusText.textContent = text;
     }
 
-    editor.addEventListener("input", renderHTML);
-    renderHTML();
+    function renderPreview() {
+      const html = editor.getValue();
+      previewFrame.srcdoc = html;
+      localStorage.setItem(LOCAL_STORAGE_KEY, html);
+      setStatus("Preview updated");
+    }
+
+    function debounce(fn, delay = 250) {
+      let timer;
+      return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+      };
+    }
+
+    const debouncedRender = debounce(renderPreview, 300);
+
+    editor.session.on("change", debouncedRender);
+
+    function loadInitialContent() {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      editor.setValue(saved || SAMPLE_HTML, -1);
+      renderPreview();
+    }
+
+    function applyTheme(mode) {
+      if (mode === "dark") {
+        document.body.classList.add("dark");
+        editor.setTheme("ace/theme/monokai");
+        hljsTheme.href =
+          "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css";
+        localStorage.setItem(THEME_STORAGE_KEY, "dark");
+        setStatus("Dark mode enabled");
+      } else {
+        document.body.classList.remove("dark");
+        editor.setTheme("ace/theme/chrome");
+        hljsTheme.href =
+          "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css";
+        localStorage.setItem(THEME_STORAGE_KEY, "light");
+        setStatus("Light mode enabled");
+      }
+    }
+
+    function loadTheme() {
+      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "light";
+      applyTheme(savedTheme);
+    }
+
+    function openPreviewInNewTab() {
+      const win = window.open("", "_blank");
+      if (!win) {
+        setStatus("Popup blocked by browser");
+        return;
+      }
+      win.document.open();
+      win.document.write(editor.getValue());
+      win.document.close();
+      setStatus("Preview opened in new tab");
+    }
+
+    function openHighlightedInNewTab() {
+      const source = editor.getValue();
+      const highlighted = hljs.highlight(source, { language: "xml" }).value;
+      const isDark = document.body.classList.contains("dark");
+
+      const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Highlighted HTML</title>
+  <link rel="stylesheet" href="${
+    isDark
+      ? "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css"
+      : "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css"
+  }" />
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, sans-serif;
+      background: ${isDark ? "#0f172a" : "#f8fafc"};
+      color: ${isDark ? "#e5e7eb" : "#111827"};
+    }
+    pre {
+      padding: 20px;
+      border-radius: 16px;
+      overflow: auto;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <h1>Highlighted HTML</h1>
+  <pre><code class="language-xml">${highlighted}</code></pre>
+</body>
+</html>`;
+
+      const win = window.open("", "_blank");
+      if (!win) {
+        setStatus("Popup blocked by browser");
+        return;
+      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      setStatus("Highlighted HTML opened in new tab");
+    }
+
+    function formatHTML() {
+      try {
+        const formatted = html_beautify(editor.getValue(), {
+          indent_size: 2,
+          wrap_line_length: 100,
+          preserve_newlines: true,
+          max_preserve_newlines: 2,
+          end_with_newline: false,
+          extra_liners: []
+        });
+        editor.setValue(formatted, -1);
+        renderPreview();
+        setStatus("HTML formatted");
+      } catch (error) {
+        console.error(error);
+        setStatus("Could not format HTML");
+      }
+    }
+
+    function expandAll() {
+      editor.execCommand("unfoldall");
+      setStatus("All sections expanded");
+    }
+
+    function collapseAll() {
+      editor.execCommand("foldall");
+      setStatus("All sections collapsed");
+    }
+
+    function clearEditor() {
+      editor.setValue("", -1);
+      renderPreview();
+      setStatus("Editor cleared");
+    }
+
+    function importFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        editor.setValue(String(e.target.result || ""), -1);
+        renderPreview();
+        setStatus(`Imported file: ${file.name}`);
+      };
+      reader.readAsText(file);
+    }
+
+    function exportFile() {
+      const blob = new Blob([editor.getValue()], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "document.html";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus("HTML exported");
+    }
+
+    document.getElementById("btnPreview").addEventListener("click", openPreviewInNewTab);
+    document.getElementById("btnHighlight").addEventListener("click", openHighlightedInNewTab);
+    document.getElementById("btnFormat").addEventListener("click", formatHTML);
+    document.getElementById("btnExpand").addEventListener("click", expandAll);
+    document.getElementById("btnCollapse").addEventListener("click", collapseAll);
+    document.getElementById("btnSample").addEventListener("click", () => {
+      editor.setValue(SAMPLE_HTML, -1);
+      renderPreview();
+      setStatus("Sample HTML inserted");
+    });
+    document.getElementById("btnClear").addEventListener("click", clearEditor);
+    document.getElementById("btnImport").addEventListener("click", () => fileInput.click());
+    document.getElementById("btnExport").addEventListener("click", exportFile);
+    document.getElementById("btnDark").addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("btnLight").addEventListener("click", () => applyTheme("light"));
+
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      if (file) importFile(file);
+      fileInput.value = "";
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (!event.altKey) return;
+
+      switch (event.key) {
+        case "1":
+          event.preventDefault();
+          openPreviewInNewTab();
+          break;
+        case "2":
+          event.preventDefault();
+          openHighlightedInNewTab();
+          break;
+        case "3":
+          event.preventDefault();
+          formatHTML();
+          break;
+        case "4":
+          event.preventDefault();
+          expandAll();
+          break;
+        case "5":
+          event.preventDefault();
+          collapseAll();
+          break;
+        case "6":
+          event.preventDefault();
+          editor.setValue(SAMPLE_HTML, -1);
+          renderPreview();
+          setStatus("Sample HTML inserted");
+          break;
+        case "7":
+          event.preventDefault();
+          clearEditor();
+          break;
+      }
+    });
+
+    loadTheme();
+    loadInitialContent();
   </script>
 </body>
 </html>
