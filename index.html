@@ -102,8 +102,9 @@
     .footer-note {
       color: var(--muted);
       font-size: 0.9rem;
-      padding: 1rem 0 0;
+      padding: 0.75rem 0;
       text-align: center;
+      width: 100%;
     }
 
     .btn-soft {
@@ -161,7 +162,7 @@
     #splitContainer {
       display: flex;
       gap: 0;
-      align-items: flex-start;
+      align-items: stretch;
       padding: 1rem;
       padding-bottom: 0;
     }
@@ -171,12 +172,36 @@
       min-width: 200px;
       max-width: 70%;
       flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
     }
 
+    /* El panel de preview ocupa toda la altura de la columna derecha */
     #rightCol {
       flex: 1;
       min-width: 200px;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #rightCol .panel {
+      flex: 1;
+    }
+
+    #rightCol #previewFrame {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      border: 0;
+      background: white;
+      display: block;
+    }
+
+    /* El panel del preview usa flex para que el iframe estire */
+    #rightCol .panel {
+      display: flex;
+      flex-direction: column;
     }
 
     #splitDivider {
@@ -211,8 +236,12 @@
       color: white;
     }
 
-    #splitDivider.dragging {
-      cursor: col-resize;
+    #splitDivider.dragging { cursor: col-resize; }
+
+    /* Footer siempre centrado respecto a la ventana */
+    .footer-note {
+      width: 100%;
+      text-align: center;
     }
 
     /* Evitar selección de texto al arrastrar */
@@ -233,12 +262,13 @@
       }
       #splitDivider { display: none; }
       #editor, #selectedCode { height: 32vh; }
-      #previewFrame { height: 48vh; }
+      #previewFrame { height: 48vh !important; }
     }
 
     @media (min-width: 992px) {
+      #splitContainer { height: calc(100vh - var(--header-h, 120px) - 2.5rem); }
       #editor, #selectedCode { height: 42vh; }
-      #previewFrame { height: 86vh; }
+      #previewFrame { height: 100% !important; }
     }
     /* ────────────────────────────────────────────────────────────────── */
   </style>
@@ -359,7 +389,7 @@
     </div>
 
     <div class="footer-note">
-      Built with ❤️ — by Carlos Ortiz
+      Built with ❤️ — by Carlos Ortiz &copy; <span id="footerYear"></span>
     </div>
   </main>
 
@@ -491,6 +521,16 @@
       highlightGutterLine: false
     });
     selectedCode.setValue("Click an element in the preview to see its HTML here.", -1);
+
+    // Calcular altura disponible descontando el header
+    function updateSplitHeight() {
+      const headerH = document.querySelector(".app-header").getBoundingClientRect().height;
+      const footerH = 42; // padding + texto footer aprox
+      document.getElementById("splitContainer").style.height =
+        `calc(100vh - ${headerH}px - ${footerH}px - 1rem)`;
+    }
+    updateSplitHeight();
+    window.addEventListener("resize", updateSplitHeight);
 
     const LOCAL_STORAGE_KEY = "html-playground-live-content";
     const THEME_STORAGE_KEY = "html-playground-live-theme";
@@ -938,6 +978,8 @@
       });
     })();
     // ───────────────────────────────────────────────────────────────────
+
+    document.getElementById("footerYear").textContent = new Date().getFullYear();
 
     loadTheme();
     loadInitialContent();
