@@ -57,7 +57,7 @@
     .toolbar { gap: 0.5rem; }
     .toolbar .btn { white-space: nowrap; }
 
-    .main-wrap { padding: 1rem; }
+    .main-wrap { padding: 0; }
 
     .panel {
       background: var(--surface);
@@ -117,7 +117,6 @@
       color: var(--text);
     }
 
-    /* CORRECCIÓN 6: Botón para colapsar panel en móvil */
     .panel-collapse-btn {
       background: none;
       border: none;
@@ -132,13 +131,116 @@
     .panel-body-collapsible { transition: max-height 0.3s ease, opacity 0.3s ease; overflow: hidden; }
     .panel-body-collapsible.collapsed { max-height: 0 !important; opacity: 0; }
 
+    /* Botón copiar en panel-header */
+    .btn-copy-panel {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: background 0.15s, color 0.15s;
+      line-height: 1;
+    }
+    .btn-copy-panel:hover {
+      background: var(--surface-2);
+      color: var(--primary);
+    }
+    .btn-copy-panel.copied { color: #16a34a; }
+
+    .panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.15rem;
+    }
+
     .ace_gutter { background: transparent !important; }
 
+    /* ── Split layout resizable ─────────────────────────────────────── */
+    #splitContainer {
+      display: flex;
+      gap: 0;
+      align-items: flex-start;
+      padding: 1rem;
+      padding-bottom: 0;
+    }
+
+    #leftCol {
+      width: 33%;
+      min-width: 200px;
+      max-width: 70%;
+      flex-shrink: 0;
+    }
+
+    #rightCol {
+      flex: 1;
+      min-width: 200px;
+      overflow: hidden;
+    }
+
+    #splitDivider {
+      width: 12px;
+      flex-shrink: 0;
+      cursor: col-resize;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      position: relative;
+      z-index: 10;
+      user-select: none;
+    }
+
+    #splitDividerHandle {
+      width: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      margin: 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 0.7rem;
+      transition: background 0.15s, color 0.15s;
+      min-height: 60px;
+    }
+
+    #splitDivider:hover #splitDividerHandle,
+    #splitDivider.dragging #splitDividerHandle {
+      background: var(--primary);
+      color: white;
+    }
+
+    #splitDivider.dragging {
+      cursor: col-resize;
+    }
+
+    /* Evitar selección de texto al arrastrar */
+    body.resizing {
+      cursor: col-resize !important;
+      user-select: none !important;
+    }
+    body.resizing iframe { pointer-events: none; }
+
     @media (max-width: 991px) {
-      #editor,
-      #selectedCode { height: 32vh; }
+      #splitContainer {
+        flex-direction: column;
+        padding: 0.75rem;
+      }
+      #leftCol, #rightCol {
+        width: 100% !important;
+        max-width: 100%;
+      }
+      #splitDivider { display: none; }
+      #editor, #selectedCode { height: 32vh; }
       #previewFrame { height: 48vh; }
     }
+
+    @media (min-width: 992px) {
+      #editor, #selectedCode { height: 42vh; }
+      #previewFrame { height: 86vh; }
+    }
+    /* ────────────────────────────────────────────────────────────────── */
   </style>
 </head>
 <body>
@@ -153,7 +255,6 @@
         </div>
 
         <div class="toolbar d-flex flex-wrap">
-          <!-- CORRECCIÓN 5: aria-label en todos los botones -->
           <button class="btn btn-primary" id="btnPreview" aria-label="Open preview in new tab">
             <i class="fa-regular fa-window-restore me-1" aria-hidden="true"></i> Preview
           </button>
@@ -185,42 +286,59 @@
   </header>
 
   <main class="main-wrap container-fluid">
-    <div class="row g-3">
-      <div class="col-lg-4">
+    <div id="splitContainer">
+
+      <!-- Columna izquierda -->
+      <div id="leftCol">
+
+        <!-- Panel Editor -->
         <section class="panel mb-3">
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Editor</h2>
               <div class="panel-subtitle">Put your HTML text here</div>
             </div>
+            <div class="panel-actions">
+              <button class="btn-copy-panel" id="btnCopyEditor" aria-label="Copy editor content" title="Copy HTML">
+                <i class="fa-regular fa-copy" aria-hidden="true"></i>
+              </button>
+            </div>
           </div>
           <div id="editor" role="textbox" aria-label="HTML code editor" aria-multiline="true"></div>
         </section>
 
-        <!-- CORRECCIÓN 6: Panel colapsable en móvil -->
+        <!-- Panel Selected Element Code -->
         <section class="panel" id="selectedPanel">
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Selected Element Code</h2>
               <div class="panel-subtitle">Click an element in preview to inspect</div>
             </div>
-            <button
-              class="panel-collapse-btn"
-              id="btnToggleSelected"
-              aria-label="Toggle selected element panel"
-              aria-expanded="true"
-              aria-controls="selectedCodeWrap"
-            >
-              <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
-            </button>
+            <div class="panel-actions">
+              <button class="btn-copy-panel" id="btnCopySelected" aria-label="Copy selected element code" title="Copy element HTML">
+                <i class="fa-regular fa-copy" aria-hidden="true"></i>
+              </button>
+              <button class="panel-collapse-btn" id="btnToggleSelected" aria-label="Toggle selected element panel" aria-expanded="true" aria-controls="selectedCodeWrap">
+                <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+              </button>
+            </div>
           </div>
           <div class="panel-body-collapsible" id="selectedCodeWrap">
             <div id="selectedCode" aria-label="Selected element HTML code" aria-readonly="true"></div>
           </div>
         </section>
+
       </div>
 
-      <div class="col-lg-8">
+      <!-- Divider arrastrable -->
+      <div id="splitDivider" title="Drag to resize" aria-hidden="true">
+        <div id="splitDividerHandle">
+          <i class="fa-solid fa-grip-lines-vertical"></i>
+        </div>
+      </div>
+
+      <!-- Columna derecha -->
+      <div id="rightCol">
         <section class="panel">
           <div class="panel-header">
             <div>
@@ -237,6 +355,7 @@
           ></iframe>
         </section>
       </div>
+
     </div>
 
     <div class="footer-note">
@@ -288,7 +407,6 @@
 </body>
 </html>`;
 
-    // CORRECCIÓN 3: Marcador único para el inspector en lugar de buscar una cadena genérica
     const INSPECTOR_MARKER = "data-html-viewer-inspector";
 
     const INSPECTOR_SCRIPT = `
@@ -381,14 +499,43 @@
       statusText.textContent = text;
     }
 
-    // CORRECCIÓN 3: Detección robusta del inspector usando atributo único en lugar de buscar string genérico
+    // ── Copiar al portapapeles con feedback visual ──────────────────────────
+    function copyToClipboard(text, btn) {
+      if (!text.trim()) {
+        setStatus("⚠️ Nothing to copy");
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        const icon = btn.querySelector("i");
+        const originalClass = icon.className;
+        icon.className = "fa-solid fa-check";
+        btn.classList.add("copied");
+        setStatus("Copied to clipboard ✓");
+        setTimeout(() => {
+          icon.className = originalClass;
+          btn.classList.remove("copied");
+        }, 2000);
+      }).catch(() => {
+        setStatus("⚠️ Could not copy — check browser permissions");
+      });
+    }
+
+    document.getElementById("btnCopyEditor").addEventListener("click", function () {
+      copyToClipboard(editor.getValue(), this);
+    });
+
+    document.getElementById("btnCopySelected").addEventListener("click", function () {
+      const PLACEHOLDER = "Click an element in the preview to see its HTML here.";
+      const content = selectedCode.getValue();
+      copyToClipboard(content === PLACEHOLDER ? "" : content, this);
+    });
+    // ───────────────────────────────────────────────────────────────────────
+
     function injectInspector(html) {
       if (html.includes(INSPECTOR_MARKER)) return html;
-
       if (html.includes("</body>")) {
         return html.replace("</body>", INSPECTOR_SCRIPT + "\n</body>");
       }
-
       return html + INSPECTOR_SCRIPT;
     }
 
@@ -396,8 +543,6 @@
       const html = editor.getValue();
       const finalHtml = injectInspector(html);
       previewFrame.srcdoc = finalHtml;
-
-      // CORRECCIÓN 4: localStorage con manejo de errores por cuota excedida
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, html);
       } catch (err) {
@@ -409,7 +554,6 @@
           return;
         }
       }
-
       setStatus("Preview updated");
     }
 
@@ -432,31 +576,33 @@
         console.warn("Could not read from localStorage:", err);
       }
 
-      // Cargar y formatear el contenido desde el inicio
-      const raw = saved || SAMPLE_HTML;
-      let formatted = raw;
-      try {
-        formatted = html_beautify(raw, {
-          indent_size: 2,
-          wrap_line_length: 100,
-          preserve_newlines: true,
-          max_preserve_newlines: 2,
-          end_with_newline: false,
-          extra_liners: []
-        });
-      } catch (_) { /* si falla el formatter usamos el raw */ }
-
-      editor.setValue(formatted, -1);
-
-      // Esperar al siguiente tick para que Ace termine de renderizar
-      setTimeout(() => {
-        editor.execCommand("unfoldall");
-        foldState = "expanded";
-        syncFoldButton();
-      }, 0);
-
-      renderPreview();
-      setStatus("Ready — code formatted & expanded");
+      if (saved) {
+        // Si hay contenido guardado, formatearlo y cargarlo
+        let formatted = saved;
+        try {
+          formatted = html_beautify(saved, {
+            indent_size: 2,
+            wrap_line_length: 100,
+            preserve_newlines: true,
+            max_preserve_newlines: 2,
+            end_with_newline: false,
+            extra_liners: []
+          });
+        } catch (_) {}
+        editor.setValue(formatted, -1);
+        setTimeout(() => {
+          editor.execCommand("unfoldall");
+          foldState = "expanded";
+          syncFoldButton();
+        }, 0);
+        renderPreview();
+        setStatus("Ready — code formatted & expanded");
+      } else {
+        // Sin contenido previo: editor vacío
+        editor.setValue("", -1);
+        renderPreview();
+        setStatus("Ready — paste or type your HTML");
+      }
     }
 
     function updateThemeButton() {
@@ -479,14 +625,11 @@
         selectedCode.setTheme("ace/theme/chrome");
         setStatus("Light mode enabled");
       }
-
-      // CORRECCIÓN 4: localStorage con manejo de errores
       try {
         localStorage.setItem(THEME_STORAGE_KEY, mode);
       } catch (err) {
         console.warn("Could not save theme preference:", err);
       }
-
       updateThemeButton();
     }
 
@@ -505,20 +648,16 @@
       applyTheme(savedTheme);
     }
 
-    // CORRECCIÓN 2: openPreviewInNewTab sin document.write() (deprecado)
     function openPreviewInNewTab() {
       const html = editor.getValue();
       const blob = new Blob([html], { type: "text/html;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const win = window.open(url, "_blank");
-
       if (!win) {
         setStatus("⚠️ Popup blocked — please allow popups for this site");
         URL.revokeObjectURL(url);
         return;
       }
-
-      // Liberar la URL del blob cuando la ventana cargue para evitar memory leaks
       win.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
       setStatus("Preview opened in new tab");
     }
@@ -547,9 +686,8 @@
       }
     }
 
-    // Estado de fold: "expanded" | "collapsed"
+    // ── Toggle Collapse / Expand ────────────────────────────────────────────
     let foldState = "expanded";
-
     const btnCollapse = document.getElementById("btnCollapse");
 
     function syncFoldButton() {
@@ -575,13 +713,13 @@
       syncFoldButton();
     }
 
-    // Al editar manualmente, volver a estado expandido
     editor.session.on("change", () => {
       if (foldState !== "expanded") {
         foldState = "expanded";
         syncFoldButton();
       }
     });
+    // ───────────────────────────────────────────────────────────────────────
 
     function clearEditor() {
       editor.setValue("", -1);
@@ -605,7 +743,6 @@
             extra_liners: []
           });
         } catch (_) {}
-
         editor.setValue(formatted, -1);
         selectedCode.setValue("Click an element in the preview to see its HTML here.", -1);
         setTimeout(() => {
@@ -633,12 +770,11 @@
       setStatus("HTML exported");
     }
 
-    // CORRECCIÓN 6: Toggle del panel "Selected Element Code" en móvil
+    // ── Panel collapse (Selected Element) ───────────────────────────────────
     const btnToggleSelected = document.getElementById("btnToggleSelected");
     const selectedCodeWrap = document.getElementById("selectedCodeWrap");
 
     function syncPanelHeight() {
-      // Establece la altura máxima dinámica para la transición CSS
       if (!selectedCodeWrap.classList.contains("collapsed")) {
         selectedCodeWrap.style.maxHeight = selectedCodeWrap.scrollHeight + "px";
       }
@@ -647,7 +783,6 @@
     btnToggleSelected.addEventListener("click", () => {
       const isCollapsed = selectedCodeWrap.classList.contains("collapsed");
       const icon = btnToggleSelected.querySelector("i");
-
       if (isCollapsed) {
         selectedCodeWrap.classList.remove("collapsed");
         selectedCodeWrap.style.maxHeight = selectedCodeWrap.scrollHeight + "px";
@@ -655,7 +790,6 @@
         icon.className = "fa-solid fa-chevron-up";
       } else {
         selectedCodeWrap.style.maxHeight = selectedCodeWrap.scrollHeight + "px";
-        // Forzar reflow para que la transición funcione
         selectedCodeWrap.getBoundingClientRect();
         selectedCodeWrap.classList.add("collapsed");
         btnToggleSelected.setAttribute("aria-expanded", "false");
@@ -663,13 +797,12 @@
       }
     });
 
-    // Inicializar altura del panel
     window.addEventListener("load", syncPanelHeight);
+    // ───────────────────────────────────────────────────────────────────────
 
     window.addEventListener("message", (event) => {
       const data = event.data;
       if (!data || data.type !== "ELEMENT_SELECTED") return;
-
       const pretty = html_beautify(data.html || "", {
         indent_size: 2,
         wrap_line_length: 100,
@@ -678,14 +811,10 @@
         end_with_newline: false,
         extra_liners: []
       });
-
       selectedCode.setValue(pretty || "", -1);
-
-      // Expandir el panel si está colapsado al seleccionar un elemento
       if (selectedCodeWrap.classList.contains("collapsed")) {
         btnToggleSelected.click();
       }
-
       setStatus(`Selected: <${String(data.tag || "").toLowerCase()}>`);
     });
 
@@ -724,6 +853,91 @@
       if (file) importFile(file);
       fileInput.value = "";
     });
+
+    // ── Divider resizable ───────────────────────────────────────────────
+    (function () {
+      const divider   = document.getElementById("splitDivider");
+      const leftCol   = document.getElementById("leftCol");
+      const container = document.getElementById("splitContainer");
+      const STORAGE_KEY_WIDTH = "html-viewer-left-width";
+
+      // Restaurar ancho guardado
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_WIDTH);
+        if (saved) leftCol.style.width = saved;
+      } catch (_) {}
+
+      let dragging = false;
+      let startX = 0;
+      let startWidth = 0;
+
+      divider.addEventListener("mousedown", (e) => {
+        dragging = true;
+        startX = e.clientX;
+        startWidth = leftCol.getBoundingClientRect().width;
+        divider.classList.add("dragging");
+        document.body.classList.add("resizing");
+        e.preventDefault();
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (!dragging) return;
+        const containerWidth = container.getBoundingClientRect().width;
+        const delta = e.clientX - startX;
+        let newWidth = startWidth + delta;
+        const minPx = 200;
+        const maxPx = containerWidth * 0.70;
+        newWidth = Math.max(minPx, Math.min(maxPx, newWidth));
+        leftCol.style.width = newWidth + "px";
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (!dragging) return;
+        dragging = false;
+        divider.classList.remove("dragging");
+        document.body.classList.remove("resizing");
+        // Guardar preferencia
+        try {
+          localStorage.setItem(STORAGE_KEY_WIDTH, leftCol.style.width);
+        } catch (_) {}
+        // Forzar resize de Ace editors
+        editor.resize();
+        selectedCode.resize();
+      });
+
+      // Touch support
+      divider.addEventListener("touchstart", (e) => {
+        dragging = true;
+        startX = e.touches[0].clientX;
+        startWidth = leftCol.getBoundingClientRect().width;
+        divider.classList.add("dragging");
+        document.body.classList.add("resizing");
+      }, { passive: true });
+
+      document.addEventListener("touchmove", (e) => {
+        if (!dragging) return;
+        const containerWidth = container.getBoundingClientRect().width;
+        const delta = e.touches[0].clientX - startX;
+        let newWidth = startWidth + delta;
+        const minPx = 200;
+        const maxPx = containerWidth * 0.70;
+        newWidth = Math.max(minPx, Math.min(maxPx, newWidth));
+        leftCol.style.width = newWidth + "px";
+      }, { passive: true });
+
+      document.addEventListener("touchend", () => {
+        if (!dragging) return;
+        dragging = false;
+        divider.classList.remove("dragging");
+        document.body.classList.remove("resizing");
+        try {
+          localStorage.setItem(STORAGE_KEY_WIDTH, leftCol.style.width);
+        } catch (_) {}
+        editor.resize();
+        selectedCode.resize();
+      });
+    })();
+    // ───────────────────────────────────────────────────────────────────
 
     loadTheme();
     loadInitialContent();
