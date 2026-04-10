@@ -3,21 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HTML Online Viewer Clone</title>
+  <title>HTML Viewer</title>
 
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css"
-    id="hljs-theme"
-  />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <style>
     :root {
@@ -65,17 +54,10 @@
       text-decoration: none;
     }
 
-    .toolbar {
-      gap: 0.5rem;
-    }
+    .toolbar { gap: 0.5rem; }
+    .toolbar .btn { white-space: nowrap; }
 
-    .toolbar .btn {
-      white-space: nowrap;
-    }
-
-    .main-wrap {
-      padding: 1rem;
-    }
+    .main-wrap { padding: 1rem; }
 
     .panel {
       background: var(--surface);
@@ -100,27 +82,22 @@
       font-size: 1rem;
     }
 
-    .panel-subtitle {
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
+    .panel-subtitle { color: var(--muted); font-size: 0.9rem; }
 
-    #editor {
+    #editor,
+    #selectedCode {
       width: 100%;
-      height: 72vh;
+      height: 42vh;
     }
 
     #previewFrame {
       width: 100%;
-      height: 72vh;
+      height: 86vh;
       border: 0;
       background: white;
     }
 
-    .status-bar {
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
+    .status-bar { color: var(--muted); font-size: 0.9rem; }
 
     .footer-note {
       color: var(--muted);
@@ -140,24 +117,27 @@
       color: var(--text);
     }
 
-    .about-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 1rem;
-      margin-top: 1rem;
+    /* CORRECCIÓN 6: Botón para colapsar panel en móvil */
+    .panel-collapse-btn {
+      background: none;
+      border: none;
       color: var(--muted);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 8px;
+      transition: background 0.15s;
     }
+    .panel-collapse-btn:hover { background: var(--surface-2); }
 
-    .ace_gutter {
-      background: transparent !important;
-    }
+    .panel-body-collapsible { transition: max-height 0.3s ease, opacity 0.3s ease; overflow: hidden; }
+    .panel-body-collapsible.collapsed { max-height: 0 !important; opacity: 0; }
+
+    .ace_gutter { background: transparent !important; }
 
     @media (max-width: 991px) {
       #editor,
-      #previewFrame {
-        height: 48vh;
-      }
+      #selectedCode { height: 32vh; }
+      #previewFrame { height: 48vh; }
     }
   </style>
 </head>
@@ -167,46 +147,38 @@
       <div class="d-flex flex-column gap-3">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
           <a href="#" class="brand">
-            <i class="fa-brands fa-html5 me-2"></i>HTML Online Viewer Clone
+            <i class="fa-brands fa-html5 me-2"></i>HTML Viewer
           </a>
-          <div class="status-bar" id="statusText">Ready</div>
+          <div class="status-bar" id="statusText" aria-live="polite" aria-atomic="true">Ready</div>
         </div>
 
         <div class="toolbar d-flex flex-wrap">
-          <button class="btn btn-primary" id="btnPreview">
-            <i class="fa-regular fa-window-restore me-1"></i> Preview
+          <!-- CORRECCIÓN 5: aria-label en todos los botones -->
+          <button class="btn btn-primary" id="btnPreview" aria-label="Open preview in new tab">
+            <i class="fa-regular fa-window-restore me-1" aria-hidden="true"></i> Preview
           </button>
-          <button class="btn btn-soft" id="btnHighlight">
-            <i class="fa-solid fa-code me-1"></i> Highlight
+          <button class="btn btn-soft" id="btnFormat" aria-label="Format HTML">
+            <i class="fa-solid fa-wand-magic-sparkles me-1" aria-hidden="true"></i> Format
           </button>
-          <button class="btn btn-soft" id="btnFormat">
-            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Format
+          <button class="btn btn-soft" id="btnCollapse" aria-label="Collapse all code sections">
+            <i class="fa-solid fa-down-left-and-up-right-to-center me-1" aria-hidden="true"></i> Collapse
           </button>
-          <button class="btn btn-soft" id="btnExpand">
-            <i class="fa-solid fa-up-right-and-down-left-from-center me-1"></i> Expand all
+          <button class="btn btn-soft" id="btnSample" aria-label="Load sample HTML">
+            <i class="fa-regular fa-file-lines me-1" aria-hidden="true"></i> Sample
           </button>
-          <button class="btn btn-soft" id="btnCollapse">
-            <i class="fa-solid fa-down-left-and-up-right-to-center me-1"></i> Collapse all
+          <button class="btn btn-soft" id="btnClear" aria-label="Clear editor">
+            <i class="fa-regular fa-trash-can me-1" aria-hidden="true"></i> Clear
           </button>
-          <button class="btn btn-soft" id="btnSample">
-            <i class="fa-regular fa-file-lines me-1"></i> Sample
+          <button class="btn btn-soft" id="btnImport" aria-label="Import HTML from file">
+            <i class="fa-solid fa-file-import me-1" aria-hidden="true"></i> Import file
           </button>
-          <button class="btn btn-soft" id="btnClear">
-            <i class="fa-regular fa-trash-can me-1"></i> Clear
+          <button class="btn btn-soft" id="btnExport" aria-label="Export HTML to file">
+            <i class="fa-solid fa-file-export me-1" aria-hidden="true"></i> Export file
           </button>
-          <button class="btn btn-soft" id="btnImport">
-            <i class="fa-solid fa-file-import me-1"></i> Import from file
+          <button class="btn btn-soft" id="btnTheme" aria-label="Toggle dark mode">
+            <i class="fa-regular fa-moon me-1" aria-hidden="true"></i> Dark mode
           </button>
-          <button class="btn btn-soft" id="btnExport">
-            <i class="fa-solid fa-file-export me-1"></i> Export to file
-          </button>
-          <button class="btn btn-soft" id="btnDark">
-            <i class="fa-regular fa-moon me-1"></i> Dark mode
-          </button>
-          <button class="btn btn-soft" id="btnLight">
-            <i class="fa-regular fa-sun me-1"></i> Light mode
-          </button>
-          <input type="file" id="fileInput" accept=".html,.htm,.txt" hidden />
+          <input type="file" id="fileInput" accept=".html,.htm,.txt" hidden aria-label="Select file to import" />
         </div>
       </div>
     </div>
@@ -214,48 +186,67 @@
 
   <main class="main-wrap container-fluid">
     <div class="row g-3">
-      <div class="col-lg-6">
-        <section class="panel">
+      <div class="col-lg-4">
+        <section class="panel mb-3">
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Editor</h2>
               <div class="panel-subtitle">Put your HTML text here</div>
             </div>
           </div>
-          <div id="editor"></div>
+          <div id="editor" role="textbox" aria-label="HTML code editor" aria-multiline="true"></div>
+        </section>
+
+        <!-- CORRECCIÓN 6: Panel colapsable en móvil -->
+        <section class="panel" id="selectedPanel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Selected Element Code</h2>
+              <div class="panel-subtitle">Click an element in preview to inspect</div>
+            </div>
+            <button
+              class="panel-collapse-btn"
+              id="btnToggleSelected"
+              aria-label="Toggle selected element panel"
+              aria-expanded="true"
+              aria-controls="selectedCodeWrap"
+            >
+              <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="panel-body-collapsible" id="selectedCodeWrap">
+            <div id="selectedCode" aria-label="Selected element HTML code" aria-readonly="true"></div>
+          </div>
         </section>
       </div>
 
-      <div class="col-lg-6">
+      <div class="col-lg-8">
         <section class="panel">
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Live Preview</h2>
-              <div class="panel-subtitle">Rendered safely inside a sandboxed iframe</div>
+              <div class="panel-subtitle">Hover to highlight, click to inspect</div>
             </div>
           </div>
           <iframe
             id="previewFrame"
             sandbox="allow-scripts allow-forms allow-modals"
             referrerpolicy="no-referrer"
+            title="HTML live preview"
+            aria-label="Live preview of HTML code"
           ></iframe>
         </section>
       </div>
     </div>
 
-    <div class="about-box">
-      This clone runs entirely in the browser. Your HTML is processed locally in the editor and rendered in the preview frame.
-    </div>
-
     <div class="footer-note">
-      Built for GitHub Pages deployment.
+      Built with ❤️ — by Carlos Ortiz
     </div>
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ext-language_tools.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
 
   <script>
     const SAMPLE_HTML = `<!DOCTYPE html>
@@ -297,11 +288,65 @@
 </body>
 </html>`;
 
+    // CORRECCIÓN 3: Marcador único para el inspector en lugar de buscar una cadena genérica
+    const INSPECTOR_MARKER = "data-html-viewer-inspector";
+
+    const INSPECTOR_SCRIPT = `
+<script ${INSPECTOR_MARKER}>
+(function () {
+  let currentHovered = null;
+
+  function clearHover(el) {
+    if (!el) return;
+    el.style.outline = el.__originalOutline || "";
+    el.style.outlineOffset = el.__originalOutlineOffset || "";
+  }
+
+  function applyHover(el) {
+    if (!el || el === document.documentElement || el === document.body) return;
+    if (currentHovered && currentHovered !== el) clearHover(currentHovered);
+    if (!el.__originalOutlineCaptured) {
+      el.__originalOutline = el.style.outline || "";
+      el.__originalOutlineOffset = el.style.outlineOffset || "";
+      el.__originalOutlineCaptured = true;
+    }
+    el.style.outline = "2px solid #ff4d4f";
+    el.style.outlineOffset = "2px";
+    currentHovered = el;
+  }
+
+  document.addEventListener("mouseover", function (e) {
+    const el = e.target;
+    if (!el || el === document.documentElement || el === document.body) return;
+    applyHover(el);
+  }, true);
+
+  document.addEventListener("mouseout", function (e) {
+    const el = e.target;
+    if (!el || el === document.documentElement || el === document.body) return;
+    if (el === currentHovered) { clearHover(el); currentHovered = null; }
+  }, true);
+
+  document.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = e.target;
+    if (!el || el === document.documentElement) return;
+    window.parent.postMessage({
+      type: "ELEMENT_SELECTED",
+      html: el.outerHTML || "",
+      tag: el.tagName || ""
+    }, "*");
+  }, true);
+})();
+<\/script>`;
+
     const editor = ace.edit("editor");
+    const selectedCode = ace.edit("selectedCode");
     const previewFrame = document.getElementById("previewFrame");
     const statusText = document.getElementById("statusText");
     const fileInput = document.getElementById("fileInput");
-    const hljsTheme = document.getElementById("hljs-theme");
+    const btnTheme = document.getElementById("btnTheme");
 
     editor.setTheme("ace/theme/chrome");
     editor.session.setMode("ace/mode/html");
@@ -315,6 +360,20 @@
       enableLiveAutocompletion: true
     });
 
+    selectedCode.setTheme("ace/theme/chrome");
+    selectedCode.session.setMode("ace/mode/html");
+    selectedCode.setOptions({
+      fontSize: "13px",
+      wrap: true,
+      useSoftTabs: true,
+      tabSize: 2,
+      showPrintMargin: false,
+      readOnly: true,
+      highlightActiveLine: false,
+      highlightGutterLine: false
+    });
+    selectedCode.setValue("Click an element in the preview to see its HTML here.", -1);
+
     const LOCAL_STORAGE_KEY = "html-playground-live-content";
     const THEME_STORAGE_KEY = "html-playground-live-theme";
 
@@ -322,10 +381,35 @@
       statusText.textContent = text;
     }
 
+    // CORRECCIÓN 3: Detección robusta del inspector usando atributo único en lugar de buscar string genérico
+    function injectInspector(html) {
+      if (html.includes(INSPECTOR_MARKER)) return html;
+
+      if (html.includes("</body>")) {
+        return html.replace("</body>", INSPECTOR_SCRIPT + "\n</body>");
+      }
+
+      return html + INSPECTOR_SCRIPT;
+    }
+
     function renderPreview() {
       const html = editor.getValue();
-      previewFrame.srcdoc = html;
-      localStorage.setItem(LOCAL_STORAGE_KEY, html);
+      const finalHtml = injectInspector(html);
+      previewFrame.srcdoc = finalHtml;
+
+      // CORRECCIÓN 4: localStorage con manejo de errores por cuota excedida
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, html);
+      } catch (err) {
+        if (err instanceof DOMException && (
+          err.name === "QuotaExceededError" ||
+          err.name === "NS_ERROR_DOM_QUOTA_REACHED"
+        )) {
+          setStatus("⚠️ Storage full — changes not saved locally");
+          return;
+        }
+      }
+
       setStatus("Preview updated");
     }
 
@@ -338,99 +422,105 @@
     }
 
     const debouncedRender = debounce(renderPreview, 300);
-
     editor.session.on("change", debouncedRender);
 
     function loadInitialContent() {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      editor.setValue(saved || SAMPLE_HTML, -1);
+      let saved = null;
+      try {
+        saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      } catch (err) {
+        console.warn("Could not read from localStorage:", err);
+      }
+
+      // Cargar y formatear el contenido desde el inicio
+      const raw = saved || SAMPLE_HTML;
+      let formatted = raw;
+      try {
+        formatted = html_beautify(raw, {
+          indent_size: 2,
+          wrap_line_length: 100,
+          preserve_newlines: true,
+          max_preserve_newlines: 2,
+          end_with_newline: false,
+          extra_liners: []
+        });
+      } catch (_) { /* si falla el formatter usamos el raw */ }
+
+      editor.setValue(formatted, -1);
+
+      // Esperar al siguiente tick para que Ace termine de renderizar
+      setTimeout(() => {
+        editor.execCommand("unfoldall");
+        foldState = "expanded";
+        syncFoldButton();
+      }, 0);
+
       renderPreview();
+      setStatus("Ready — code formatted & expanded");
+    }
+
+    function updateThemeButton() {
+      const isDark = document.body.classList.contains("dark");
+      btnTheme.innerHTML = isDark
+        ? '<i class="fa-regular fa-sun me-1" aria-hidden="true"></i> Light mode'
+        : '<i class="fa-regular fa-moon me-1" aria-hidden="true"></i> Dark mode';
+      btnTheme.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
     }
 
     function applyTheme(mode) {
       if (mode === "dark") {
         document.body.classList.add("dark");
         editor.setTheme("ace/theme/monokai");
-        hljsTheme.href =
-          "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css";
-        localStorage.setItem(THEME_STORAGE_KEY, "dark");
+        selectedCode.setTheme("ace/theme/monokai");
         setStatus("Dark mode enabled");
       } else {
         document.body.classList.remove("dark");
         editor.setTheme("ace/theme/chrome");
-        hljsTheme.href =
-          "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css";
-        localStorage.setItem(THEME_STORAGE_KEY, "light");
+        selectedCode.setTheme("ace/theme/chrome");
         setStatus("Light mode enabled");
       }
+
+      // CORRECCIÓN 4: localStorage con manejo de errores
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, mode);
+      } catch (err) {
+        console.warn("Could not save theme preference:", err);
+      }
+
+      updateThemeButton();
+    }
+
+    function toggleTheme() {
+      const isDark = document.body.classList.contains("dark");
+      applyTheme(isDark ? "light" : "dark");
     }
 
     function loadTheme() {
-      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "light";
+      let savedTheme = "light";
+      try {
+        savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "light";
+      } catch (err) {
+        console.warn("Could not read theme preference:", err);
+      }
       applyTheme(savedTheme);
     }
 
+    // CORRECCIÓN 2: openPreviewInNewTab sin document.write() (deprecado)
     function openPreviewInNewTab() {
-      const win = window.open("", "_blank");
+      const html = editor.getValue();
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, "_blank");
+
       if (!win) {
-        setStatus("Popup blocked by browser");
+        setStatus("⚠️ Popup blocked — please allow popups for this site");
+        URL.revokeObjectURL(url);
         return;
       }
-      win.document.open();
-      win.document.write(editor.getValue());
-      win.document.close();
+
+      // Liberar la URL del blob cuando la ventana cargue para evitar memory leaks
+      win.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
       setStatus("Preview opened in new tab");
-    }
-
-    function openHighlightedInNewTab() {
-      const source = editor.getValue();
-      const highlighted = hljs.highlight(source, { language: "xml" }).value;
-      const isDark = document.body.classList.contains("dark");
-
-      const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Highlighted HTML</title>
-  <link rel="stylesheet" href="${
-    isDark
-      ? "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css"
-      : "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css"
-  }" />
-  <style>
-    body {
-      margin: 0;
-      padding: 24px;
-      font-family: Arial, sans-serif;
-      background: ${isDark ? "#0f172a" : "#f8fafc"};
-      color: ${isDark ? "#e5e7eb" : "#111827"};
-    }
-    pre {
-      padding: 20px;
-      border-radius: 16px;
-      overflow: auto;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-  </style>
-</head>
-<body>
-  <h1>Highlighted HTML</h1>
-  <pre><code class="language-xml">${highlighted}</code></pre>
-</body>
-</html>`;
-
-      const win = window.open("", "_blank");
-      if (!win) {
-        setStatus("Popup blocked by browser");
-        return;
-      }
-      win.document.open();
-      win.document.write(html);
-      win.document.close();
-      setStatus("Highlighted HTML opened in new tab");
     }
 
     function formatHTML() {
@@ -444,26 +534,58 @@
           extra_liners: []
         });
         editor.setValue(formatted, -1);
+        setTimeout(() => {
+          editor.execCommand("unfoldall");
+          foldState = "expanded";
+          syncFoldButton();
+        }, 0);
         renderPreview();
-        setStatus("HTML formatted");
+        setStatus("HTML formatted & expanded");
       } catch (error) {
         console.error(error);
-        setStatus("Could not format HTML");
+        setStatus("⚠️ Could not format HTML");
       }
     }
 
-    function expandAll() {
-      editor.execCommand("unfoldall");
-      setStatus("All sections expanded");
+    // Estado de fold: "expanded" | "collapsed"
+    let foldState = "expanded";
+
+    const btnCollapse = document.getElementById("btnCollapse");
+
+    function syncFoldButton() {
+      if (foldState === "expanded") {
+        btnCollapse.innerHTML = '<i class="fa-solid fa-down-left-and-up-right-to-center me-1" aria-hidden="true"></i> Collapse';
+        btnCollapse.setAttribute("aria-label", "Collapse all code sections");
+      } else {
+        btnCollapse.innerHTML = '<i class="fa-solid fa-up-right-and-down-left-from-center me-1" aria-hidden="true"></i> Expand';
+        btnCollapse.setAttribute("aria-label", "Expand all code sections");
+      }
     }
 
-    function collapseAll() {
-      editor.execCommand("foldall");
-      setStatus("All sections collapsed");
+    function toggleFold() {
+      if (foldState === "expanded") {
+        editor.execCommand("foldall");
+        foldState = "collapsed";
+        setStatus("All sections collapsed");
+      } else {
+        editor.execCommand("unfoldall");
+        foldState = "expanded";
+        setStatus("All sections expanded");
+      }
+      syncFoldButton();
     }
+
+    // Al editar manualmente, volver a estado expandido
+    editor.session.on("change", () => {
+      if (foldState !== "expanded") {
+        foldState = "expanded";
+        syncFoldButton();
+      }
+    });
 
     function clearEditor() {
       editor.setValue("", -1);
+      selectedCode.setValue("Click an element in the preview to see its HTML here.", -1);
       renderPreview();
       setStatus("Editor cleared");
     }
@@ -471,10 +593,30 @@
     function importFile(file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        editor.setValue(String(e.target.result || ""), -1);
+        const raw = String(e.target.result || "");
+        let formatted = raw;
+        try {
+          formatted = html_beautify(raw, {
+            indent_size: 2,
+            wrap_line_length: 100,
+            preserve_newlines: true,
+            max_preserve_newlines: 2,
+            end_with_newline: false,
+            extra_liners: []
+          });
+        } catch (_) {}
+
+        editor.setValue(formatted, -1);
+        selectedCode.setValue("Click an element in the preview to see its HTML here.", -1);
+        setTimeout(() => {
+          editor.execCommand("unfoldall");
+          foldState = "expanded";
+          syncFoldButton();
+        }, 0);
         renderPreview();
-        setStatus(`Imported file: ${file.name}`);
+        setStatus(`Imported & expanded: ${file.name}`);
       };
+      reader.onerror = () => setStatus("⚠️ Could not read the file");
       reader.readAsText(file);
     }
 
@@ -491,63 +633,96 @@
       setStatus("HTML exported");
     }
 
+    // CORRECCIÓN 6: Toggle del panel "Selected Element Code" en móvil
+    const btnToggleSelected = document.getElementById("btnToggleSelected");
+    const selectedCodeWrap = document.getElementById("selectedCodeWrap");
+
+    function syncPanelHeight() {
+      // Establece la altura máxima dinámica para la transición CSS
+      if (!selectedCodeWrap.classList.contains("collapsed")) {
+        selectedCodeWrap.style.maxHeight = selectedCodeWrap.scrollHeight + "px";
+      }
+    }
+
+    btnToggleSelected.addEventListener("click", () => {
+      const isCollapsed = selectedCodeWrap.classList.contains("collapsed");
+      const icon = btnToggleSelected.querySelector("i");
+
+      if (isCollapsed) {
+        selectedCodeWrap.classList.remove("collapsed");
+        selectedCodeWrap.style.maxHeight = selectedCodeWrap.scrollHeight + "px";
+        btnToggleSelected.setAttribute("aria-expanded", "true");
+        icon.className = "fa-solid fa-chevron-up";
+      } else {
+        selectedCodeWrap.style.maxHeight = selectedCodeWrap.scrollHeight + "px";
+        // Forzar reflow para que la transición funcione
+        selectedCodeWrap.getBoundingClientRect();
+        selectedCodeWrap.classList.add("collapsed");
+        btnToggleSelected.setAttribute("aria-expanded", "false");
+        icon.className = "fa-solid fa-chevron-down";
+      }
+    });
+
+    // Inicializar altura del panel
+    window.addEventListener("load", syncPanelHeight);
+
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (!data || data.type !== "ELEMENT_SELECTED") return;
+
+      const pretty = html_beautify(data.html || "", {
+        indent_size: 2,
+        wrap_line_length: 100,
+        preserve_newlines: true,
+        max_preserve_newlines: 2,
+        end_with_newline: false,
+        extra_liners: []
+      });
+
+      selectedCode.setValue(pretty || "", -1);
+
+      // Expandir el panel si está colapsado al seleccionar un elemento
+      if (selectedCodeWrap.classList.contains("collapsed")) {
+        btnToggleSelected.click();
+      }
+
+      setStatus(`Selected: <${String(data.tag || "").toLowerCase()}>`);
+    });
+
     document.getElementById("btnPreview").addEventListener("click", openPreviewInNewTab);
-    document.getElementById("btnHighlight").addEventListener("click", openHighlightedInNewTab);
     document.getElementById("btnFormat").addEventListener("click", formatHTML);
-    document.getElementById("btnExpand").addEventListener("click", expandAll);
-    document.getElementById("btnCollapse").addEventListener("click", collapseAll);
+    btnCollapse.addEventListener("click", toggleFold);
     document.getElementById("btnSample").addEventListener("click", () => {
-      editor.setValue(SAMPLE_HTML, -1);
+      let formatted = SAMPLE_HTML;
+      try {
+        formatted = html_beautify(SAMPLE_HTML, {
+          indent_size: 2,
+          wrap_line_length: 100,
+          preserve_newlines: true,
+          max_preserve_newlines: 2,
+          end_with_newline: false,
+          extra_liners: []
+        });
+      } catch (_) {}
+      editor.setValue(formatted, -1);
+      selectedCode.setValue("Click an element in the preview to see its HTML here.", -1);
+      setTimeout(() => {
+        editor.execCommand("unfoldall");
+        foldState = "expanded";
+        syncFoldButton();
+      }, 0);
       renderPreview();
-      setStatus("Sample HTML inserted");
+      setStatus("Sample HTML inserted & expanded");
     });
     document.getElementById("btnClear").addEventListener("click", clearEditor);
     document.getElementById("btnImport").addEventListener("click", () => fileInput.click());
     document.getElementById("btnExport").addEventListener("click", exportFile);
-    document.getElementById("btnDark").addEventListener("click", () => applyTheme("dark"));
-    document.getElementById("btnLight").addEventListener("click", () => applyTheme("light"));
+    btnTheme.addEventListener("click", toggleTheme);
 
     fileInput.addEventListener("change", (event) => {
       const file = event.target.files?.[0];
       if (file) importFile(file);
       fileInput.value = "";
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (!event.altKey) return;
-
-      switch (event.key) {
-        case "1":
-          event.preventDefault();
-          openPreviewInNewTab();
-          break;
-        case "2":
-          event.preventDefault();
-          openHighlightedInNewTab();
-          break;
-        case "3":
-          event.preventDefault();
-          formatHTML();
-          break;
-        case "4":
-          event.preventDefault();
-          expandAll();
-          break;
-        case "5":
-          event.preventDefault();
-          collapseAll();
-          break;
-        case "6":
-          event.preventDefault();
-          editor.setValue(SAMPLE_HTML, -1);
-          renderPreview();
-          setStatus("Sample HTML inserted");
-          break;
-        case "7":
-          event.preventDefault();
-          clearEditor();
-          break;
-      }
     });
 
     loadTheme();
